@@ -71,7 +71,12 @@ router.get('/queryTimeClose', function (req, res, next) {
         }
         for (var i = 0; i < data.length; i++) {
             arrayClose.push(data[i].close);
-        }
+        };
+        for (var i = 0; i < data.length; i++) {
+            arrayTime.push(data[i].time);
+        };
+        ///console.log(arrayClose);
+        //console.log(arrayTime);
         //console.log(arrayClose);
         // for (var i = 0; i < 29; ++i) {
         //     var model = new model_RSI();
@@ -171,69 +176,92 @@ router.get('/queryTimeClose', function (req, res, next) {
 
 
         //     }
-
-        //     console.log('Date: ' + model.Date);
-        //     console.log('CLose: ' + model.CLose);
-        //     console.log('Change: ' + model.Change);
-        //     console.log('Gain: ' + model.Gain);
-        //     console.log('AvgGain: ' + model.AvgGain);
-        //     console.log('AvgLoss: ' + model.AvgLoss);
-        //     console.log('RS: ' + model.RS);
-        //     console.log("_14DayRSi: " + model._14DayRSI);
-        //     console.log("--------------------");
-
-
-            // tt: model.save((err) => {
-            //     if (err) {
-            //         console.log('erro' + err);
-            //         return;
-            //     }
-            //     console.log('successful');
-            // });
-        for(var i = 0 ; i< 24; i++){
+        for (var i = 0; i < data.length; i++) {
             var model = new model_RSI();
+            var sumGain = 0;
+            var sumLoss = 0;
             if (i == 0) {
-                model[i].Date = data[0].time;
-                model[i].CLose = arrayClose[0];
-                // model.Change = 0;
-                // model.Gain = 0;
-                // model.Loss = 0;
-                // model.AvgGain = 0;
-                // model.AvgLoss = 0;
-                // model.RS = 0;
-                // model._14DayRSI = 0;
+                model.Date = data[0].time;
+                model.CLose = arrayClose[0];
+                model.Change = 0;
+                model.Gain = 0;
+                model.Loss = 0;
+                model.AvgGain = 0;
+                model.AvgLoss = 0;
+                model.RS = 0;
+                model._14DayRSI = 0;
             }
-            // else{
-            //     var sumGain = 0;
-            //     var sumLoss = 0;
+            else {
+                model.Date = data[i].time;
+                model.CLose = arrayClose[i];
+                model.Change = arrayClose[i] - arrayClose[i - 1];
+                if (model.Change > 0) {
+                    model.Gain = model.Change;
+                }
+                else {
+                    model.Gain = 0;
+                }
+                if (model.Change < 0) {
+                    model.Loss = -model.Change;
+                }
+                else {
+                    model.Loss = 0;
+                }
+                sumGain += model.Gain;
+                sumLoss += model.Loss;
+                var avgG;
+                var avgL;
+                if (i < 14) {
+                    model.AvgGain = 0;
+                    model.AvgLoss = 0;
+                    model.RS = 0;
+                    model._14DayRSI = 0;
+                }
+                else if (i == 14) {
+                    model.AvgGain = sumGain / 14;
+                    model.AvgLoss = sumLoss / 14;
+                    avgG = model.AvgGain;
+                    avgL = model.AvgLoss;
+                    model.RS =(model.Gain / model.Loss);
 
-            //     model.Date = data[i].time;
-            //     model.CLose = arrayClose[i];
-            //     model.Change = arrayClose[i] - arrayClose[i - 1];
-            //     if(model.Change > 0){
-            //         model.Gain = model.Change;
-            //     }
-            //     else{
-            //         model.Gain = 0;
-            //     }
-            //     if(model.Change < 0){
-            //         model.Loss = -model.Change;
-            //     }
-            //     else{
-            //         model.Loss = 0;
-            //     }
-            //     for(var j = 0; j < 14 ; j++){
-            //         sumGain += model[j].Gain;
-            //         sumLoss += model[i].Loss;
-            //     }
-            //     if(i==14){
-            //         AvgGain = sumGain/14;
-            //         AvgLoss = sumLoss/14; 
-            //     }
-            //     // if(i >= 15){
-            //     //     AvgGain = (sumGain/14)*13 + 
-            //     // }
-            // }
+                    if (model.AvgLoss == 0) {
+                        model._14DayRSI = 100;
+                    }
+                    else {
+                        model._14DayRSI = (100 - (100 / (1 + model.RS)));
+                    }
+                }
+                else {
+                    model.AvgGain = (avgG * 13 + model.Gain) / 14;
+                    model.AvgLoss = (avgL * 13 + model.Loss) / 14;
+                    model.RS =(model.Gain / model.Loss);
+
+                    if (model.AvgLoss == 0) {
+                        model._14DayRSI = 100;
+                    }
+                    else {
+                        model._14DayRSI = (100 - (100 / (1 + model.RS)));
+                    }
+                }
+
+
+                console.log('Date: ' + model.Date);
+                console.log('CLose: ' + model.CLose);
+                console.log('Change: ' + model.Change);
+                console.log('Gain: ' + model.Gain);
+                console.log('AvgGain: ' + model.AvgGain);
+                console.log('AvgLoss: ' + model.AvgLoss);
+                console.log('RS: ' + model.RS);
+                console.log("_14DayRSi: " + model._14DayRSI);
+                console.log("--------------------" + i);
+            }
+             // model.save((err) => {
+        //     if (err) {
+        //         console.log('erro' + err);
+        //         return;
+        //     }
+        //     console.log('successful');
+        //     // });
         }
     }).select('time close');
 });
